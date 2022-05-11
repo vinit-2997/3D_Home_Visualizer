@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+        <script src="https://cdn.babylonjs.com/loaders/babylon.objFileLoader.js"></script>  
+        
+        <link rel="stylesheet" href="style.css">
+
+        <style>
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+
+
+
+            .sidenav {
+            height: 100%;
+            width: 200px;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: #111;
+            overflow-x: hidden;
+            padding-top: 20px;
+            }
+
+            .sidenav a {
+            padding: 6px 6px 6px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            }
+
+            .sidenav a:hover {
+            color: #f1f1f1;
+            }
+
+            .main {
+            margin-left: 200px; 
+    
+            overflow-x: hidden;
+            overflow-y: hidden;
+
+            }
+
+
+        </style>
+    </head>
+<body>
+
+
+
+    <div class="sidenav">
+        <a href="#">About</a>
+        <button onclick="addSofa()">Add Sofa</button>
+        <button onclick="addTV()">Add TV</button>
+        <button onclick="addTable()">Add table</button>
+        <button onclick="addChair()">Add chair</button>
+        <button onclick="addLamp()">Add lamp</button>
+        <a href="#">Services</a>
+        <a href="#">Clients</a>
+        <a href="#">Contact</a>
+    </div>
+    
+    <div class="main">
+        <canvas id="renderCanvas"></canvas>
+    </div>
+
+    
+
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+
+
+
+        class Room 
+        {
+            height = 40;
+            width = 100;
+            depth = 80;
+            wallWidth = 1;
+            walls = [];
+            floor;
+            wall1;
+            wall2;
+            wall3;
+            wall4;
+            constructor(scene) {
+                const roofMat = new BABYLON.StandardMaterial("roofMat", scene);
+                roofMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/environments/roof.jpg", scene);
+
+                this.floor = BABYLON.MeshBuilder.CreateTiledPlane("floor", { width: this.width, height: this.depth, tileSize: 10 }, scene);
+
+                this.floor.rotation.x = Math.PI / 2;
+                this.floor.material = roofMat;
+
+                const wallMat = new BABYLON.StandardMaterial("roofMat", scene);
+                wallMat.diffuseTexture = new BABYLON.Texture("https://www.babylonjs-playground.com/textures/floor.png", scene);
+
+                this.wall1 = BABYLON.MeshBuilder.CreateTiledBox("wall1", { width: this.width, height: this.height, depth: this.wallWidth, tileSize: 10 });
+                this.wall1.position = new BABYLON.Vector3(0, this.height / 2, -(this.depth - this.wallWidth) / 2);
+                this.wall1.material = wallMat;
+                this.wall1.checkCollisions = true;
+                this.walls.push(this.wall1);
+                this.wall2 = BABYLON.MeshBuilder.CreateTiledBox("wall2", { width: this.width, height: this.height, depth: this.wallWidth, tileSize: 10 });
+                this.wall2.position = new BABYLON.Vector3(0, this.height / 2, (this.depth - this.wallWidth) / 2);
+                this.wall2.material = wallMat;
+                this.walls.push(this.wall1);
+                this.wall3 = BABYLON.MeshBuilder.CreateTiledBox("wall3", { width: this.wallWidth, height: this.height, depth: this.depth, tileSize: 10 });
+                this.wall3.position = new BABYLON.Vector3(-(this.width - this.wallWidth) / 2, this.height / 2, 0);
+                this.wall3.material = wallMat;
+                this.walls.push(this.wall3);
+                this.wall4 = BABYLON.MeshBuilder.CreateTiledBox("wall4", { width: this.wallWidth, height: this.height, depth: this.depth, tileSize: 10 });
+                this.wall4.position = new BABYLON.Vector3((this.width - this.wallWidth) / 2, this.height / 2, 0);
+                this.wall4.material = wallMat;
+                this.walls.push(this.wall4);
+            }
+
+            hideWalls(cameraPosition) 
+            {
+                this.wall1.isVisible = cameraPosition.z > -this.depth / 2;
+                this.wall2.isVisible = cameraPosition.z < this.depth / 2;
+                this.wall3.isVisible = cameraPosition.x > -this.width / 2;
+                this.wall4.isVisible = cameraPosition.x < this.width / 2;
+            }
+        }
+
+
+
+        class Things 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                // const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: size }, scene);
+                // this.furniture_objs.push("sphere");
+                // sphere.position.y = size / 2;
+                // const sphereDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                // sphereDrag.dragDeltaRatio = 0.8;
+                // sphere.addBehavior(sphereDrag);
+                // this.list.push(sphere);
+
+
+                const box = BABYLON.MeshBuilder.CreateBox("box", { size: size });
+                box.position = new BABYLON.Vector3(-5, size / 2, 0);
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                box.addBehavior(boxDrag);
+                this.list.push(box);
+                this.furniture_objs.push("box");
+
+
+                const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", { height: size, diameter: size });
+                cylinder.position = new BABYLON.Vector3(5, size / 2, 0);
+                const cylinderDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                cylinder.addBehavior(cylinderDrag);
+                this.furniture_objs.push("cylinder");
+                console.log(this.furniture_objs);
+
+
+
+                // var gizmo1 = new BABYLON.PositionGizmo();
+                // gizmo1.attachedMesh = box;
+                // // Create the gizmo and attach to the box
+                // var gizmo = new BABYLON.PlaneRotationGizmo(new BABYLON.Vector3(0, 1, 0), BABYLON.Color3.FromHexString("#00b894"));
+                // gizmo.attachedMesh = box;
+
+                // this.list.push(cylinder);
+
+
+                
+
+
+
+                // var gizmoManager = new BABYLON.GizmoManager(scene)
+                // gizmoManager.boundingBoxGizmoEnabled=true
+                // // Restrict gizmos to only spheres
+                // gizmoManager.attachableMeshes = this.furniture_objs
+                // // Toggle gizmos with keyboard buttons
+                // document.onkeydown = (e)=>{
+                //     if(e.key == 'p'){
+                //         gizmoManager.positionGizmoEnabled = !gizmoManager.positionGizmoEnabled
+                //     }
+                //     if(e.key == 'r'){
+                //         gizmoManager.rotationGizmoEnabled = !gizmoManager.rotationGizmoEnabled
+                //     }
+                //     if(e.key == 't'){
+                //         gizmoManager.scaleGizmoEnabled = !gizmoManager.scaleGizmoEnabled
+                //     }
+                //     if(e.key == 'b'){
+                //         gizmoManager.boundingBoxGizmoEnabled = !gizmoManager.boundingBoxGizmoEnabled
+                //     }
+                // }
+
+
+            //     BABYLON.SceneLoader.ImportMeshAsync("", "./models/sofa_web/", "scene.gltf").then((result) => {
+            //     const house2 = result.meshes[0];
+
+            //     house2.scaling = new BABYLON.Vector3(0.02, 0.05, 0.03);
+            //     house2.position.y = 1.5;
+            //     house2.rotation.x = BABYLON.Tools.ToRadians(180);
+            //     house2.rotation.y = BABYLON.Tools.ToRadians(180);
+            //     house2.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+            //     const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+            //     house2.addBehavior(boxDrag);
+            //     //house2.rotation.y = Math.PI ;
+
+            //     this.furniture_objs.push(house2)
+            //     console.log(this.furniture_objs);
+
+            // });
+
+                scene.registerBeforeRender(() => {
+                    this.checkCollisions();
+                });
+            }
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+
+        //things2
+
+
+        class Things2 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+
+                const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: size }, scene);
+                this.furniture_objs.push("sphere");
+                sphere.position.y = size / 2;
+                const sphereDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                sphereDrag.dragDeltaRatio = 0.8;
+                sphere.addBehavior(sphereDrag);
+                this.list.push(sphere);
+
+
+                // const box = BABYLON.MeshBuilder.CreateBox("box", { size: size });
+                // box.position = new BABYLON.Vector3(-5, size / 2, 0);
+                // const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                // box.addBehavior(boxDrag);
+                // this.list.push(box);
+                // this.furniture_objs.push("box");
+
+
+                // const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", { height: size, diameter: size });
+                // cylinder.position = new BABYLON.Vector3(5, size / 2, 0);
+                // const cylinderDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                // cylinder.addBehavior(cylinderDrag);
+                // this.furniture_objs.push("cylinder");
+                // console.log(this.furniture_objs);
+
+
+
+                // var gizmo1 = new BABYLON.PositionGizmo();
+                // gizmo1.attachedMesh = box;
+                // // Create the gizmo and attach to the box
+                // var gizmo = new BABYLON.PlaneRotationGizmo(new BABYLON.Vector3(0, 1, 0), BABYLON.Color3.FromHexString("#00b894"));
+                // gizmo.attachedMesh = box;
+
+                // this.list.push(cylinder);
+
+
+                
+
+
+
+                // var gizmoManager = new BABYLON.GizmoManager(scene)
+                // gizmoManager.boundingBoxGizmoEnabled=true
+                // // Restrict gizmos to only spheres
+                // gizmoManager.attachableMeshes = this.furniture_objs
+                // // Toggle gizmos with keyboard buttons
+                // document.onkeydown = (e)=>{
+                //     if(e.key == 'p'){
+                //         gizmoManager.positionGizmoEnabled = !gizmoManager.positionGizmoEnabled
+                //     }
+                //     if(e.key == 'r'){
+                //         gizmoManager.rotationGizmoEnabled = !gizmoManager.rotationGizmoEnabled
+                //     }
+                //     if(e.key == 't'){
+                //         gizmoManager.scaleGizmoEnabled = !gizmoManager.scaleGizmoEnabled
+                //     }
+                //     if(e.key == 'b'){
+                //         gizmoManager.boundingBoxGizmoEnabled = !gizmoManager.boundingBoxGizmoEnabled
+                //     }
+                // }
+
+
+            //     BABYLON.SceneLoader.ImportMeshAsync("", "./models/sofa_web/", "scene.gltf").then((result) => {
+            //     const house2 = result.meshes[0];
+
+            //     house2.scaling = new BABYLON.Vector3(0.02, 0.05, 0.03);
+            //     house2.position.y = 1.5;
+            //     house2.rotation.x = BABYLON.Tools.ToRadians(180);
+            //     house2.rotation.y = BABYLON.Tools.ToRadians(180);
+            //     house2.rotation.z = BABYLON.Tools.ToRadians(180); 
+            //     //house2.rotation.y = Math.PI ;
+
+            //     this.furniture_objs.push(house2)
+            //     console.log(this.furniture_objs);
+
+            // });
+
+                scene.registerBeforeRender(() => {
+                    this.checkCollisions();
+                });
+            }
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+        class sofa 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/sofa_web/", "scene.gltf").then((result) => {
+                const house2 = result.meshes[0];
+
+                house2.scaling = new BABYLON.Vector3(0.02, 0.05, 0.03);
+                house2.position.y = 1.5;
+                house2.rotation.x = BABYLON.Tools.ToRadians(180);
+                house2.rotation.y = BABYLON.Tools.ToRadians(180);
+                house2.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                house2.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(house2)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+        class fan 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/pedestal_fan/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(0.02, 0.05, 0.03);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+
+
+
+        class tv 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/tv_unit/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(0.02, 0.05, 0.08);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+
+            
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+
+
+        class lamp 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/lamp/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(5, 5, 5);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+
+
+                var light0 = new BABYLON.SpotLight("SpotChassis", new BABYLON.Vector3(0, 3, 0), new BABYLON.Vector3(0, -1, 0), 1, 1, scene, true);
+
+
+                const lampLight = new BABYLON.SpotLight("lampLight", BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, -1, 0), Math.PI, 1, scene);
+                lampLight.diffuse = BABYLON.Color3.Yellow();
+                light0.diffuse = new BABYLON.Color3(0.9, 0.11, 0.11);
+                light0.specular = new BABYLON.Color3(1, 1, 1);
+                        
+                light0.parent = fan;
+                lampLight.parent = fan;
+                
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+
+            
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+
+        class desk 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/lowry_desk_low_poly/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(0.2, 0.5, 0.8);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+
+            
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+        class sofa_new 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/sofa_-_long_sofa/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(2, 0.9, 1);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+
+            
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+        class chair 
+        {
+            room;
+            list = [];
+
+            furniture_objs = [];
+            boundX;
+            boundZ;
+            constructor(scene, room) {
+                this.room = room;
+                const size = 4;
+                this.boundX = (room.width) / 2 - room.wallWidth - size / 2;
+                this.boundZ = (room.depth) / 2 - room.wallWidth - size / 2;
+
+                BABYLON.SceneLoader.ImportMeshAsync("", "./models/the_matrix_chair/", "scene.gltf").then((result) => {
+                const fan = result.meshes[0];
+
+                fan.scaling = new BABYLON.Vector3(0.020, 0.02, 0.01);
+                fan.position.y = 1.5;
+                fan.rotation.x = BABYLON.Tools.ToRadians(180);
+                fan.rotation.y = BABYLON.Tools.ToRadians(180);
+                fan.rotation.z = BABYLON.Tools.ToRadians(180); 
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                fan.addBehavior(boxDrag);
+                //house2.rotation.y = Math.PI ;
+
+                this.furniture_objs.push(fan)
+                console.log(this.furniture_objs);
+
+            });
+
+                // scene.registerBeforeRender(() => {
+                //     this.checkCollisions();
+                // });
+            }
+
+
+
+            
+
+
+            checkCollisions() {
+                this.list.forEach(mesh => {
+                    if (mesh.position.x >= this.boundX && this.room.wall4.isVisible)
+                        mesh.position.x = this.boundX;
+                    if (mesh.position.x <= -this.boundX && this.room.wall3.isVisible)
+                        mesh.position.x = -this.boundX;
+                    if (mesh.position.z >= this.boundZ && this.room.wall2.isVisible)
+                        mesh.position.z = this.boundZ;
+                    if (mesh.position.z <= -this.boundZ && this.room.wall1.isVisible)
+                        mesh.position.z = -this.boundZ;
+                });
+            }
+
+        }
+
+
+
+
+        /////main class
+        class Playground {
+            static CreateScene(engine, canvas) {
+                const scene = new BABYLON.Scene(engine);
+                scene.collisionsEnabled = true;
+                const camera = new BABYLON.ArcRotateCamera("Camera", Math.PI / 2, Math.PI / 2, 25, new BABYLON.Vector3(0, 10, 0), scene);
+                camera.attachControl(canvas, true);
+                camera.checkCollisions = true;
+                new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
+                const room = new Room(scene);
+                //const th = new Things(scene, room);
+                //new Things2(scene, room);
+
+                //var light = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+
+                 const lampLight = new BABYLON.SpotLight("lampLight", BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, -1, 0), Math.PI, 1, scene);
+                //const lampLight = new BABYLON.HemisphericLight("HemiLight", new BABYLON.Vector3(0, 1, 0), scene);
+
+                lampLight.diffuse = BABYLON.Color3.Green();
+
+                //shape to extrude
+                const lampShape = [];
+                for(let i = 0; i < 20; i++) {
+                    lampShape.push(new BABYLON.Vector3(Math.cos(i * Math.PI / 10), Math.sin(i * Math.PI / 10), 0));
+                }
+                lampShape.push(lampShape[0]); //close shape
+
+                //extrusion path
+                const lampPath = [];
+                lampPath.push(new BABYLON.Vector3(0, 0, 0));
+                lampPath.push(new BABYLON.Vector3(0, 10, 0));
+                for(let i = 0; i < 20; i++) {
+                    lampPath.push(new BABYLON.Vector3(1 + Math.cos(Math.PI - i * Math.PI / 40), 10 + Math.sin(Math.PI - i * Math.PI / 40), 0));
+                }
+                lampPath.push(new BABYLON.Vector3(3, 11, 0));
+
+                const yellowMat = new BABYLON.StandardMaterial("yellowMat");
+                yellowMat.emissiveColor = BABYLON.Color3.Yellow();
+
+                //extrude lamp
+                const lamp = BABYLON.MeshBuilder.ExtrudeShape("lamp", {cap: BABYLON.Mesh.CAP_END, shape: lampShape, path: lampPath, scale: 0.5});
+                
+                //add bulb
+                const bulb = BABYLON.MeshBuilder.CreateSphere("bulb", {diameterX: 1.5, diameterZ: 0.8});
+                
+                bulb.material = yellowMat;
+                bulb.parent = lamp;
+                bulb.position.x = 2;
+                bulb.position.y = 10.5;
+                lampLight.intensity = 10
+
+                lampLight.parent = bulb;
+
+
+                const boxDrag = new BABYLON.PointerDragBehavior({ dragPlaneNormal: new BABYLON.Vector3(0, 1, 0) });
+                lampLight.addBehavior(boxDrag);
+
+                var state = false
+
+
+                scene.onPointerObservable.add((pointerInfo) => {
+        switch (pointerInfo.type) {
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                if (pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh.name == "bulb") {
+
+                    console.log("bulb pressed")
+                     state = !state
+                    lampLight.setEnabled(state);
+                }
+                break;
+        }
+    });
+
+
+
+                
+
+                // new fan(scene, room)
+
+                
+
+                // new lamp(scene, room)
+
+                
+
+                //new sofa_new(scene, room)
+
+                
+
+                
+
+
+
+
+                // //gizmo
+
+                var gizmoManager = new BABYLON.GizmoManager(scene)
+                
+                // Restrict gizmos to only spheres
+                gizmoManager.attachableMeshes = this.furniture_objs
+                //gizmoManager.positionGizmoEnabled=true
+                gizmoManager.boundingBoxDragBehavior.rotateDraggedObject = false;
+                // Toggle gizmos with keyboard buttons
+                document.onkeydown = (e)=>{
+                    if(e.key == 'p'){
+                        gizmoManager.positionGizmoEnabled = !gizmoManager.positionGizmoEnabled
+                    }
+                    if(e.key == 'r'){
+                        gizmoManager.rotationGizmoEnabled = !gizmoManager.rotationGizmoEnabled
+                    }
+                    if(e.key == 't'){
+                        gizmoManager.scaleGizmoEnabled = !gizmoManager.scaleGizmoEnabled
+                    }
+                    if(e.key == 'b'){
+                        gizmoManager.boundingBoxGizmoEnabled = !gizmoManager.boundingBoxGizmoEnabled
+                    }
+                }
+
+            
+                engine.runRenderLoop(() => {
+                    room.hideWalls(camera.position);
+                    scene.render();
+                });
+                return scene;
+            }
+        }
+
+
+
+        createScene = function() { return Playground.CreateScene(engine, engine.getRenderingCanvas()); }
+                window.initFunction = async function() 
+                {
+                    
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+
+        startRenderLoop(engine, canvas);
+
+        window.scene = createScene();
+};
+
+        initFunction().then(() => {sceneToRender = scene                    
+        });
+
+        // Resize
+        // window.addEventListener("resize", function () {
+        //     engine.resize();
+        // });
+
+
+        function openNav() {
+        document.getElementById("mySidenav").style.width = "250px";
+        document.getElementById("main").style.marginLeft = "250px";
+        }
+
+
+  
+
+        function addTV() {
+            new tv(engine, canvas)
+        }
+
+        function addSofa() {
+            new sofa(engine, canvas)
+        }
+
+        function addChair() {
+            new chair(engine, canvas)
+        }
+
+        function addSofa() {
+            new sofa(engine, canvas)
+        }
+
+        function addLamp() {
+            new lamp(engine, canvas)
+        }
+
+        function closeNav() {
+        document.getElementById("mySidenav").style.width = "0";
+        document.getElementById("main").style.marginLeft= "0";
+        }
+    </script>
+</body>
+</html>

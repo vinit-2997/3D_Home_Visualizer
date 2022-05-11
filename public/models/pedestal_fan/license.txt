@@ -1,0 +1,11 @@
+Model Information:
+* title:	Pedestal Fan
+* source:	https://sketchfab.com/3d-models/pedestal-fan-fbde233657574586aa5e8fe83b2f4675
+* author:	Ahmed Emara (https://sketchfab.com/emara666)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Pedestal Fan" (https://sketchfab.com/3d-models/pedestal-fan-fbde233657574586aa5e8fe83b2f4675) by Ahmed Emara (https://sketchfab.com/emara666) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

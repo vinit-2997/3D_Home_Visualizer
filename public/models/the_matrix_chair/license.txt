@@ -1,0 +1,11 @@
+Model Information:
+* title:	The Matrix Chair
+* source:	https://sketchfab.com/3d-models/the-matrix-chair-0aaa3398169241dbbb1ff0c205e0042f
+* author:	tipatat (https://sketchfab.com/tipatat)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "The Matrix Chair" (https://sketchfab.com/3d-models/the-matrix-chair-0aaa3398169241dbbb1ff0c205e0042f) by tipatat (https://sketchfab.com/tipatat) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

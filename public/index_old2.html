@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+        clearListeners()
+
+var createScene = function () {
+    engine.stencil = true
+    var scene = new BABYLON.Scene(engine);
+    scene.collisionsEnabled = true
+
+    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+    camera.setTarget(BABYLON.Vector3.Zero());
+    camera.attachControl(canvas, true);
+
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 0.7;
+
+    var pointLight = new BABYLON.PointLight("light", new BABYLON.Vector3(0, 5, 2), scene);
+    pointLight.intensity = 0.1
+
+    var shadowGenerator = new BABYLON.ShadowGenerator(2048, pointLight);
+    shadowGenerator.useBlurExponentialShadowMap = true;
+    shadowGenerator.useContactHardeningShadow = true;
+
+    var highlightLayer = new BABYLON.HighlightLayer("highlight", scene);
+
+    const useHeightMap = false
+
+    if (useHeightMap) {
+        const ground = BABYLON.Mesh.CreateGroundFromHeightMap("ground", "images/floor.jpg", 6, 6, 20, 0, 2, scene, false);
+        ground.isPickable = true
+        ground.checkCollisions = true
+        ground.receiveShadows = true
+    } else {
+
+        const roofMat = new BABYLON.StandardMaterial("roofMat");
+        roofMat.diffuseTexture = new BABYLON.Texture("images/floor.jpg");
+
+        const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 6, height: 6}, scene);
+        ground.isPickable = true
+        ground.checkCollisions = false
+        ground.receiveShadows = true
+        ground.material = roofMat;
+    }
+
+    const wallLeft = BABYLON.MeshBuilder.CreatePlane("wall-left", {width: 6, height: 2.1}, scene) 
+    wallLeft.rotation.y = -Math.PI / 2
+    wallLeft.position.y += 1
+    wallLeft.position.x -= 3
+    wallLeft.isPickable = false
+    wallLeft.checkCollisions = true
+    wallLeft.computeWorldMatrix(true)
+
+    const wallRight = BABYLON.MeshBuilder.CreatePlane("wall-right", {width: 6, height: 2.1}, scene) 
+    wallRight.rotation.y = Math.PI / 2
+    wallRight.position.y += 1
+    wallRight.position.x += 3
+    wallRight.isPickable = false
+    wallRight.checkCollisions = true
+    wallRight.computeWorldMatrix(true)
+
+    const wallTop = BABYLON.MeshBuilder.CreatePlane("wall-top", {width: 6, height: 2.1}, scene) 
+    wallTop.position.y += 1
+    wallTop.position.z += 3
+    wallTop.isPickable = false
+    wallTop.checkCollisions = true
+    wallTop.computeWorldMatrix(true)
+
+    const wallBottom = BABYLON.MeshBuilder.CreatePlane("wall-bottom", {width: 6, height: 2.1, sideOrientation: BABYLON.Mesh.DEFAULTSIDE}, scene) 
+    wallBottom.rotation.y = Math.PI / 1
+    wallBottom.position.y += 1
+    wallBottom.position.z -= 3
+    wallBottom.isPickable = false
+    wallBottom.isVisible = true
+    wallBottom.checkCollisions = true
+    wallBottom.computeWorldMatrix(true)
+
+    var box = BABYLON.MeshBuilder.CreateBox("box", {width: 0.6, height: 1.6, depth: 0.4}, scene)
+    box.isPickable = false
+    box.checkCollisions = true
+    box.ellipsoid = new BABYLON.Vector3(0.3, 0.8, 0.2)
+    box.position.y = 0.8
+    box.id = "box";
+
+    shadowGenerator.addShadowCaster(box)
+
+    const bed = BABYLON.MeshBuilder.CreateBox("box", {width: 1, height: 1, depth: 3}, scene)
+    bed.isPickable = false
+    bed.checkCollisions = true
+    bed.position.z += 2.1
+
+    bed.id = "bed";
+
+    shadowGenerator.addShadowCaster(bed)
+
+    const closet = BABYLON.MeshBuilder.CreateBox("closet", {width: 0.4, height: 0.8, depth: 1.5}, scene)
+    closet.isPickable = false
+    closet.checkCollisions = true
+    closet.position.x -= 2.8
+    closet.position.z -= 1
+    closet.position.y += 0.4
+
+    const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", scene)
+    cylinder.isPickable = false
+    cylinder.checkCollisions = true
+    cylinder.position.x += 2
+    cylinder.position.z -= 1
+
+    shadowGenerator.addShadowCaster(bed)
+
+
+    
+
+    var utilLayer = new BABYLON.UtilityLayerRenderer(scene);
+
+        // Create the gizmo and attach to the sphere
+        var gizmo1 = new BABYLON.PositionGizmo();
+    //gizmo1.attachedMesh = box;
+
+    // Create the gizmo and attach to the box
+    var gizmo = new BABYLON.PlaneRotationGizmo(new BABYLON.Vector3(0,1,0), BABYLON.Color3.FromHexString("#00b894"));
+    //gizmo.attachedMesh = box;
+
+        // Updating using local rotation
+    // gizmo.updateGizmoRotationToMatchAttachedMesh = true;
+    // gizmo.updateGizmoPositionToMatchAttachedMesh = true;
+        
+        gizmo1.attachedMesh = bed;
+        gizmo.attachedMesh = bed;
+
+
+    scene.onPointerDown = function castRay(){
+
+    var ray = scene.createPickingRay(scene.pointerX, scene.pointerY, BABYLON.Matrix.Identity(), scene.activeCamera);
+    var hit = scene.pickWithRay(ray);
+    if (hit.pickedMesh!= null && hit.pickedMesh.id =="bed"){
+        
+        gizmo1.attachedMesh = bed;
+        gizmo.attachedMesh = bed;
+    }
+    else {
+
+        gizmo.attachedMesh = null;
+        gizmo1.attachedMesh = null;
+    }
+
+    }
+
+    
+    // setTimeout(() => {
+    //     const start = box.position.clone()
+    //     console.log('start', start.toString())
+
+    //     const end = new BABYLON.Vector3(0, 0.5, -3)
+    //     end.y = start.y
+    //     console.log('end', end.toString())
+
+    //     const direction = end.subtract(start)
+    //     console.log('direction', direction.toString())
+        
+    //     box.moveWithCollisions(direction)
+    //     console.log('moved', box.position.clone().toString())
+    // }, 1000)
+
+
+    // setTimeout(() => {
+    //     const startBack = box.position.clone()
+    //     console.log('startBack', startBack.toString())
+
+    //     const endBack = new BABYLON.Vector3(0, 0.5, 0)
+    //     console.log('endBack', endBack.toString())
+
+    //     const directionBack = endBack.subtract(startBack)
+    //     console.log('directionBack', directionBack.toString())
+
+    //     console.log('shouldMoveTo', startBack.add(directionBack).toString())
+    //     box.moveWithCollisions(directionBack)
+    //     console.log('movedBack', box.position.clone().toString())
+    // }, 3000)
+
+
+    let nextPosition = null
+    let moveEnabled = true
+    addListener("mousemove", (e) => {
+        var pickResult = scene.pick(e.offsetX, e.offsetY);
+        if(moveEnabled && pickResult.pickedPoint) nextPosition = pickResult.pickedPoint
+    })
+    
+    addListener("keydown", (e) => {
+        if(e.keyCode == 37) {
+            box.rotation.y -= 0.2;
+        }else if(e.keyCode == 39) {
+            box.rotation.y += 0.2;
+        }
+    })
+
+    addListener("keyup", (e) => {
+        if(e.keyCode == 37) {
+            box.rotation.y -= 0.2;
+        }else if(e.keyCode == 39) {
+            box.rotation.y += 0.2;
+        }
+    })
+
+    setTimeout(() => {
+        highlightLayer.addMesh(box, BABYLON.Color3.Green());
+
+        addListener("click", () => {
+            highlightLayer.removeMesh(box);
+            moveEnabled = false
+        })
+    }, 1000)
+
+
+    scene.registerBeforeRender(function () {
+        if (nextPosition) {
+            const start = box.position.clone()
+            console.log('start', start.toString())
+
+            const end = nextPosition.clone()
+            end.y = 0.8
+            console.log('end', end.toString())
+
+            const distance = end.subtract(start)
+            console.log('distance', distance.toString())
+            
+            box.moveWithCollisions(distance)
+            console.log('moved', box.position.clone().toString())
+
+            nextPosition = null
+        }
+	});
+
+    return scene;
+};
+
+function clearListeners() {
+    const listeners = window.listeners || []
+    listeners.forEach((listener) => {
+        window.removeEventListener(listener.type, listener.listener)
+    })
+    window.listeners = []
+}
+
+function addListener(type, fn) {
+    const listener = window.addEventListener(type, fn)
+    window.listeners = window.listeners || []
+    window.listeners.push({type, listener})
+}
+                window.initFunction = async function() {
+                    
+                    
+                    var asyncEngineCreation = async function() {
+                        try {
+                        return createDefaultEngine();
+                        } catch(e) {
+                        console.log("the available createEngine function failed. Creating the default engine instead");
+                        return createDefaultEngine();
+                        }
+                    }
+
+                    window.engine = await asyncEngineCreation();
+        if (!engine) throw 'engine should not be null.';
+        startRenderLoop(engine, canvas);
+        window.scene = createScene();};
+        initFunction().then(() => {sceneToRender = scene                    
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+</html>
